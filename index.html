@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AR.js - GPS + Marker + Joystick Kondisional</title>
+    <title>AR.js - GPS + Marker + Joystick Radius 30m</title>
 
     <!-- A-Frame & AR.js -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
@@ -19,7 +19,7 @@
         width: 150px;
         height: 150px;
         z-index: 999;
-        display: none; /* Akan ditampilkan hanya jika objek aktif */
+        display: none; 
       }
     </style>
   </head>
@@ -34,7 +34,7 @@
     >
       <!-- Assets -->
       <a-assets>
-        <a-asset-item id="model1" src="assets/roket.glb"></a-asset-item>
+        <a-asset-item id="model1" src="./assets/roket.glb"></a-asset-item>
       </a-assets>
 
       <a-camera gps-camera rotation-reader></a-camera>
@@ -104,7 +104,20 @@
         else pos.x += moveSpeed;
       });
 
-      // GPS Position Detection
+      // Fungsi Haversine: Menghitung jarak dua titik GPS (dalam meter)
+      function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+        const R = 6371000; // Radius bumi dalam meter
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = 
+          Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+          Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c; // Jarak dalam meter
+      }
+
+      // GPS Position Detection (Radius 30 meter)
       const gpsCamera = document.querySelector("[gps-camera]");
       gpsCamera.addEventListener("gps-camera-update-position", (e) => {
         const userLat = e.detail.position.latitude;
@@ -113,13 +126,13 @@
         const lat1 = -7.938864739978554, lon1 = 112.62758850559806;
         const lat2 = -6.201000, lon2 = 106.817000;
 
-        const dist1 = Math.sqrt((userLat - lat1) ** 2 + (userLon - lon1) ** 2);
-        const dist2 = Math.sqrt((userLat - lat2) ** 2 + (userLon - lon2) ** 2);
+        const dist1 = getDistanceFromLatLonInMeters(userLat, userLon, lat1, lon1);
+        const dist2 = getDistanceFromLatLonInMeters(userLat, userLon, lat2, lon2);
 
-        if (dist1 < 0.0003) {
+        if (dist1 < 30) {
           activeEntity = gps1;
           joystickEnabled = true;
-        } else if (dist2 < 0.0003) {
+        } else if (dist2 < 30) {
           activeEntity = gps2;
           joystickEnabled = true;
         } else {
