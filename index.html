@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AR.js - GPS + Marker + Joystick</title>
+    <title>AR.js - GPS + Marker + Joystick Selalu Aktif</title>
 
     <!-- A-Frame & AR.js -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
@@ -19,7 +19,7 @@
         width: 150px;
         height: 150px;
         z-index: 999;
-        display: none;
+        display: block; /* Selalu aktif */
       }
     </style>
   </head>
@@ -81,7 +81,6 @@
       const marker = document.getElementById("marker");
 
       let activeEntity = null;
-      let joystickEnabled = true;
 
       // Joystick
       const joystick = nipplejs.create({
@@ -93,7 +92,7 @@
 
       const moveSpeed = 0.5;
       joystick.on("move", (evt, data) => {
-        if (!joystickEnabled || !activeEntity) return;
+        if (!activeEntity) return;
 
         const dir = data.angle.degree;
         const pos = activeEntity.object3D.position;
@@ -118,24 +117,17 @@
 
         if (dist1 < 0.0003) {
           activeEntity = gps1;
-          joystickEnabled = true;
         } else if (dist2 < 0.0003) {
           activeEntity = gps2;
-          joystickEnabled = true;
         } else {
           activeEntity = null;
-          joystickEnabled = false;
         }
-
-        joystickContainer.style.display = joystickEnabled ? "block" : "none";
       });
 
       // Marker Tracking
       marker.addEventListener("markerFound", () => {
         setTimeout(() => {
           activeEntity = markerModel;
-          joystickEnabled = true;
-          joystickContainer.style.display = "block";
           markerModel.setAttribute("visible", true);
           markerModel.object3D.visible = true;
         }, 300);
@@ -143,8 +135,6 @@
 
       marker.addEventListener("markerLost", () => {
         activeEntity = null;
-        joystickEnabled = false;
-        joystickContainer.style.display = "none";
       });
     </script>
   </body>
