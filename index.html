@@ -2,16 +2,15 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AR.js Maskot Lokasi + Joystick</title>
+    <title>AR.js - GPS + Marker + Swap + Assets</title>
 
     <!-- A-Frame & AR.js -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar-nft.js"></script>
 
-    <!-- NippleJS (joystick) -->
+    <!-- Joystick -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
 
-    <!-- Styling for Joystick -->
     <style>
       #joystickContainer {
         position: absolute;
@@ -20,70 +19,176 @@
         width: 150px;
         height: 150px;
         z-index: 999;
+        display: none;
+      }
+
+      #swapButton {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        padding: 10px 15px;
+        font-size: 16px;
+        z-index: 999;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: none;
+        border-radius: 10px;
       }
     </style>
   </head>
 
   <body style="margin: 0; overflow: hidden">
     <div id="joystickContainer"></div>
+    <button id="swapButton">Ganti Karakter</button>
 
     <a-scene
-      vr-mode-ui="enabled: false"
       embedded
       arjs="sourceType: webcam; gpsMinAccuracy: 100; debugUIEnabled: false;"
       renderer="logarithmicDepthBuffer: true;"
     >
-      <!-- Kamera AR -->
+      <!-- Assets -->
+      <a-assets>
+        <a-asset-item id="model1" src="assets/roket.glb"></a-asset-item>
+        <a-asset-item id="model2" src="assets/anis lari.glb"></a-asset-item>
+      </a-assets>
+
       <a-camera gps-camera rotation-reader></a-camera>
 
-      <!-- Maskot Kampus -->
+      <!-- Lokasi GPS 1 -->
       <a-entity
-        id="maskot"
-        gltf-model="assets/anis lari.glb"
-        scale="1000 1000 1000"
+        id="gps1"
+        gps-entity-place="latitude: -7.938864739978554; longitude: 112.62758850559806;"
+        gltf-model="#model1"
         animation-mixer
-        gps-entity-place="latitude: -7.938800500927263; longitude: 112.6276037159613;"
+        scale="200 200 200"
         rotation="0 180 0"
       ></a-entity>
+
+      <!-- Lokasi GPS 2 -->
+      <a-entity
+        id="gps2"
+        gps-entity-place="latitude: -6.201000; longitude: 106.817000;"
+        gltf-model="#model1"
+        animation-mixer
+        scale="2 2 2"
+        rotation="0 180 0"
+      ></a-entity>
+
+      <!-- Marker HIRO -->
+      <a-marker id="marker" preset="hiro">
+        <a-entity
+          id="markerModel"
+          gltf-model="#model1"
+          animation-mixer
+          scale="1000 1000 1000"
+          position="0 0 0"
+          rotation="0 180 0"
+        ></a-entity>
+      </a-marker>
     </a-scene>
 
     <script>
-      // Setup joystick
-      var joystick = nipplejs.create({
-        zone: document.getElementById('joystickContainer'),
-        mode: 'static',
-        position: { left: '50%', top: '50%' },
-        color: 'blue',
+      const joystickContainer = document.getElementById("joystickContainer");
+      const swapButton = document.getElementById("swapButton");
+
+      const gps1 = document.getElementById("gps1");
+      const gps2 = document.getElementById("gps2");
+      const markerModel = document.getElementById("markerModel");
+      const marker = document.getElementById("marker");
+
+      const modelPaths = {
+        1: "#model1",
+        2: "#model2"
+      };
+
+      let currentModelGps1 = 1;
+      let currentModelGps2 = 1;
+      let currentModelMarker = 1;
+
+      let activeEntity = null;
+      let joystickEnabled = false;
+
+      // Joystick
+      const joystick = nipplejs.create({
+        zone: joystickContainer,
+        mode: "static",
+        position: { left: "50%", top: "50%" },
+        color: "blue"
       });
 
-      let maskot = null;
-      let moveSpeed = 0.5;
+      const moveSpeed = 0.5;
+      joystick.on("move", (evt, data) => {
+        if (!joystickEnabled || !activeEntity) return;
 
-      // Tunggu sampai scene A-Frame siap
-      window.addEventListener('load', () => {
-        const interval = setInterval(() => {
-          maskot = document.querySelector('#maskot');
-          if (maskot && maskot.object3D) {
-            clearInterval(interval);
+        const dir = data.angle.degree;
+        const pos = activeEntity.object3D.position;
 
-            // Joystick event listener
-            joystick.on('move', (evt, data) => {
-              if (!maskot) return;
-              const dir = data.angle.degree;
-              let pos = maskot.object3D.position;
+        if (dir >= 45 && dir < 135) pos.z -= moveSpeed;
+        else if (dir >= 135 && dir < 225) pos.x -= moveSpeed;
+        else if (dir >= 225 && dir < 315) pos.z += moveSpeed;
+        else pos.x += moveSpeed;
+      });
 
-              if (dir >= 45 && dir < 135) {
-                pos.z -= moveSpeed; // maju
-              } else if (dir >= 135 && dir < 225) {
-                pos.x -= moveSpeed; // kiri
-              } else if (dir >= 225 && dir < 315) {
-                pos.z += moveSpeed; // mundur
-              } else {
-                pos.x += moveSpeed; // kanan
-              }
-            });
-          }
-        }, 1000);
+      // Tombol Swap
+      swapButton.addEventListener("click", () => {
+        if (activeEntity === gps1) {
+          currentModelGps1 = currentModelGps1 === 1 ? 2 : 1;
+          gps1.setAttribute("gltf-model", modelPaths[currentModelGps1]);
+          joystickEnabled = currentModelGps1 === 1;
+        } else if (activeEntity === gps2) {
+          currentModelGps2 = currentModelGps2 === 1 ? 2 : 1;
+          gps2.setAttribute("gltf-model", modelPaths[currentModelGps2]);
+          joystickEnabled = currentModelGps2 === 1;
+        } else if (activeEntity === markerModel) {
+          currentModelMarker = currentModelMarker === 1 ? 2 : 1;
+          markerModel.setAttribute("gltf-model", modelPaths[currentModelMarker]);
+          joystickEnabled = currentModelMarker === 1;
+        }
+
+        joystickContainer.style.display = joystickEnabled ? "block" : "none";
+      });
+
+      // GPS Position Detection
+      const gpsCamera = document.querySelector("[gps-camera]");
+      gpsCamera.addEventListener("gps-camera-update-position", (e) => {
+        const userLat = e.detail.position.latitude;
+        const userLon = e.detail.position.longitude;
+
+        const lat1 = -7.938864739978554, lon1 = 112.62758850559806;
+        const lat2 = -6.201000, lon2 = 106.817000;
+
+        const dist1 = Math.sqrt((userLat - lat1) ** 2 + (userLon - lon1) ** 2);
+        const dist2 = Math.sqrt((userLat - lat2) ** 2 + (userLon - lon2) ** 2);
+
+        if (dist1 < 0.0003) {
+          activeEntity = gps1;
+          joystickEnabled = currentModelGps1 === 1;
+        } else if (dist2 < 0.0003) {
+          activeEntity = gps2;
+          joystickEnabled = currentModelGps2 === 1;
+        } else {
+          activeEntity = null;
+          joystickEnabled = false;
+        }
+
+        joystickContainer.style.display = joystickEnabled ? "block" : "none";
+      });
+
+      // Marker Tracking
+      marker.addEventListener("markerFound", () => {
+        setTimeout(() => {
+          activeEntity = markerModel;
+          joystickEnabled = currentModelMarker === 1;
+          joystickContainer.style.display = joystickEnabled ? "block" : "none";
+          markerModel.setAttribute("visible", true);
+          markerModel.object3D.visible = true;
+        }, 300);
+      });
+
+      marker.addEventListener("markerLost", () => {
+        activeEntity = null;
+        joystickEnabled = false;
+        joystickContainer.style.display = "none";
       });
     </script>
   </body>
