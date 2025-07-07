@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AR.js - GPS + Marker + Joystick</title>
+    <title>AR.js - GPS + Marker + Joystick Kondisional</title>
 
     <!-- A-Frame & AR.js -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
@@ -19,7 +19,7 @@
         width: 150px;
         height: 150px;
         z-index: 999;
-        display: none;
+        display: none; /* Akan ditampilkan hanya jika objek aktif */
       }
     </style>
   </head>
@@ -81,7 +81,7 @@
       const marker = document.getElementById("marker");
 
       let activeEntity = null;
-      let joystickEnabled = true;
+      let joystickEnabled = false;
 
       // Joystick
       const joystick = nipplejs.create({
